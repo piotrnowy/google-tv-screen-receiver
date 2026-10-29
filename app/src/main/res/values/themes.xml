@@ -1,0 +1,12 @@
+<resources>
+
+    <style name="Theme.ScreenReceiver" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">#0B1220</item>
+        <item name="android:colorAccent">#81DED0</item>
+        <item name="android:colorPrimary">#0B1220</item>
+        <item name="android:windowAllowEnterTransitionOverlap">true</item>
+        <item name="android:windowAllowReturnTransitionOverlap">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

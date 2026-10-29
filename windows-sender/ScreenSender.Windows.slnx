@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ScreenSender.Windows/ScreenSender.Windows.csproj" />
+  <Project Path="ScreenSender.Windows.Tests/ScreenSender.Windows.Tests.csproj" />
+</Solution>
