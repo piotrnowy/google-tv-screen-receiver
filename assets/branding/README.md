@@ -1,34 +1,29 @@
 # P&K Applications branding
 
-Shared branding for the Google TV receiver and Windows sender. The white P&K lettering sits inside a teal display on a navy rounded tile; the full company name appears on the TV banner and app publisher labels.
+Both applications use artwork adapted from the supplied CompanyLogo.png: navy P&K lettering with the original blue/cyan identity on white. The former teal display icon has been replaced. The original supplied file remains unchanged.
 
-## Artwork and platform exports
+## Source and exports
 
-- `pk-applications-icon.png`: original generated transparent square icon (1254 x 1254).
-- `pk-screen-receiver-banner.png`: original generated company/app banner (1672 x 941).
-- `pk-applications.ico`: Windows icon with 16, 20, 24, 32, 40, 48, 64, 96, 128 and 256 pixel PNG-backed frames.
-- `Export-Icons.ps1`: converts the source artwork to platform sizes without changing the design.
-- Android `ic_launcher_pk.png`: 48/72/96/144/192 pixel launcher assets in the corresponding mipmap density directories.
-- Android `tv_banner_pk.png`: 320 x 180 launcher banner.
+- company-logo.png: byte-for-byte copy of the supplied company logo, retained as the authoritative visual reference.
+- pk-applications-icon.png: square icon master adapted from that logo. The P&K monogram is prominent; the small APPLICATIONS subline is omitted for icon-size readability.
+- pk-screen-receiver-banner.png: wide Google TV banner master with the company wordmark and Screen Receiver title.
+- pk-applications.ico: Windows icon with 16, 20, 24, 32, 40, 48, 64, 96, 128 and 256 pixel PNG-backed frames.
+- Export-Icons.ps1: deterministic resizing/packaging of the approved masters.
+- Android ic_launcher_pk.png: 48/72/96/144/192 pixel launcher resources.
+- Android tv_banner_pk.png: 320x180 launcher banner.
 
-The Android manifest references the new assets; original launcher artwork is retained. Both Windows executables use the ICO; Projector Connect also embeds it for its title bar/taskbar and displays the full company name with the ampersand rendered literally.
+The Android manifest already selects these resource names. Both Windows executables use the ICO; Projector Connect additionally embeds it for its title bar/taskbar. Existing publisher text and runtime behavior are unchanged.
 
-To regenerate the format/size exports from these source images, run from the repository root on Windows:
+Run .\assets\branding\Export-Icons.ps1 from repository root to regenerate the platform formats from the masters.
 
-```powershell
-.\assets\branding\Export-Icons.ps1
-```
+The adapted masters were created with the built-in image-generation tool, using the supplied company logo as the edit target. They are visual adaptations, not pixel-identical copies of the original. No API key or CLI fallback was used. Platform exports only resize/package these masters. Original generated artwork is recoverable from Git history.
 
-The source artwork was created using the built-in image-generation tool, without the API/CLI fallback. Exporting only resizes and packages those images. No credentials, machine paths, device identifiers or runtime captures are part of these assets.
-
-## Final prompts
+## Final edit prompts
 
 ### Icon
 
-Use case: logo-brand. Asset type: production app icon shared by a Google TV screen receiver and a Windows projector connection app, owned by P&K Applications. Create ONE square icon, straight-on flat digital artwork, not a mockup or presentation board. Use the existing app palette: deep midnight navy (#0E151F), mint teal (#5ED4C0), and crisp white. A premium minimal rounded-square navy tile with genuinely transparent space outside its smoothly rounded corners. Inside, one bold teal outline of a widescreen display, with a short simple centered stand; integrate the exact lettering "P&K" in large, heavy, exceptionally legible white geometric sans-serif in the screen. The lettering is the main identifying feature, not a small caption. Spell exactly P ampersand K. Large balanced shapes, generous deliberate negative space, no fine details. Keep all lettering and the display silhouette in the central safe area so the symbol remains recognizable under circular/squircle launcher masks. The tile itself nearly fills the canvas. Communicate screen sharing and company ownership through this monogram and display. Flat clean edges with excellent contrast, sharp professional finish. No extra text, no gradients, no photography, no 3D, no bevels, no drop shadow, no watermark, no background scene. Produce a high-resolution square source image suitable for PNG app icons and a multi-resolution Windows ICO.
+Use case: logo-brand / precise-object-edit. Edit target: the supplied CompanyLogo.png, the user's official P&K Applications logo. Create a production square app icon master for Windows and Android, with a solid pure-white background and the original P&K monogram centered, large and legible. Remove the excessive exterior whitespace and omit ONLY the small APPLICATIONS subline for tiny-size legibility. Preserve the exact custom shapes of the P, ampersand and K, the dark navy letters, and the existing cyan/electric-blue gradient in the ampersand and K wing. Do not redesign the mark. Fit the complete P&K monogram within the central 82% width, with balanced white padding; no cropping of letters. No display frame, no invented symbol, no extra text, no mockup, no shadows, no neon, no tile perspective. Output one square high-resolution icon source.
 
 ### TV banner
 
-The reference image is `pk-applications-icon.png`.
-
-Use case: logo-brand. Asset type: finished Android TV / Google TV launcher banner, ONE wide rectangular 16:9 image, not a mockup. Image 1 is a visual reference: reuse its exact P&K screen icon, its navy/teal/white identity and clean bold typography. Produce a matching, beautifully balanced brand banner with an uninterrupted deep navy (#0E151F) full-bleed background. A clearly recognizable version of the supplied P&K screen icon occupies the left portion; to its right, set the exact company name "P&K Applications" as the main large white headline, with the exact app name "Screen Receiver" on a smaller mint-teal line beneath. Spell precisely P ampersand K, capital A in Applications, and capital S and R in Screen Receiver. Those are the only two text lines outside the P&K monogram. Keep everything comfortably inside the edges, with strong negative space and large, simple, clear letters that remain readable when this artwork is scaled down to a 320x180-pixel TV launcher tile. Horizontally composed 16:9 canvas, avoid excess empty border. Premium minimal flat digital graphic, crisp, cohesive with the supplied icon. Do not add fine decorative lines, extra symbols, 3D effects, device mockups, extra slogans, watermarks, or a transparent background.
+Use case: logo-brand / precise-object-edit. Edit target: the supplied CompanyLogo.png, the user's official logo. Create one finished 16:9 Google TV launcher banner with pure white background. Preserve and reproduce the supplied P&K monogram and APPLICATIONS wordmark exactly, including navy letters and cyan/electric-blue gradient shapes; do not redesign or replace its typography. Remove the excessive exterior whitespace so the complete original logo occupies about 82% of the banner width, centered and balanced. Below the APPLICATIONS wordmark add only the app title "Screen Receiver" in a simple readable navy sans-serif, with comfortable vertical separation. All artwork and text must remain inside a 7% safe margin and readable at 320x180. No other symbols, no display frame, no mockup, no decoration or shadows. Output one wide high-resolution banner source.

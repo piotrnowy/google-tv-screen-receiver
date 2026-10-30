@@ -1,4 +1,4 @@
-# Export platform sizes from the generated P&K artwork. No design changes.
+# Export platform sizes from the CompanyLogo-based P&K artwork. No design changes.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
