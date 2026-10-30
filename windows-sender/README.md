@@ -4,7 +4,7 @@ Sends a Windows 11 desktop and default system playback audio to the Google TV re
 
 ## Projector Connect desktop app
 
-Run `dotnet run --project ScreenSender.Desktop` from this directory. The Windows window discovers named, active receivers on the local network. Choose a row and **Connect selected** to start sharing; **Disconnect** stops sharing and restores Windows audio. Multiple receivers remain separate even when they have the same name. **Connect by address** supports older receiver versions or networks that block multicast.
+Run `dotnet run --project ScreenSender.Desktop` from this directory. The Windows window discovers named, active receivers on the local network. Choose a device card and **Share screen**; the same primary action becomes **Stop sharing** while connected. Multiple receivers remain separate even when they have the same name. **Connect by IP address** and **Technical details** are collapsed by default, keeping manual connection and original logs available without cluttering the main workflow.
 
 The TV app now advertises its Google TV name by default. Use **Receiver name → CHANGE RECEIVER NAME** inside Screen Receiver to save a custom name. See [desktop app setup and discovery behavior](../docs/public/windows-app.md).
 
@@ -25,6 +25,7 @@ From this directory:
 dotnet restore
 dotnet build
 dotnet run --project ScreenSender.Windows.Tests
+dotnet run --project ScreenSender.Desktop.Tests
 ```
 
 `global.json` selects a stable .NET 10 SDK, checking an optional ignored `.tools/dotnet` installation before the machine-wide SDK. The executable checks exercise configuration, signaling, frame layout, audio conversion/Opus, audio-state restoration, media-key handling and local WebRTC interoperability. Physical desktop/audio output still needs an actual TV.

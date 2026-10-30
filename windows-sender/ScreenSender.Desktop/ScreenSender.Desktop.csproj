@@ -3,6 +3,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>../../assets/branding/pk-applications.ico</ApplicationIcon>
+    <Company>P&amp;K Applications</Company>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>
@@ -16,6 +19,8 @@
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="ScreenSender.Desktop.Tests" />
+    <EmbeddedResource Include="../../assets/branding/pk-applications.ico" LogicalName="ScreenSender.Desktop.Brand.ico" />
     <ProjectReference Include="../ScreenSender.Windows/ScreenSender.Windows.csproj" />
     <None Include="../ScreenSender.Windows/appsettings.json" Link="appsettings.json" Condition="Exists('../ScreenSender.Windows/appsettings.json')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

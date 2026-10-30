@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="ScreenSender.Windows/ScreenSender.Windows.csproj" />
   <Project Path="ScreenSender.Desktop/ScreenSender.Desktop.csproj" />
+  <Project Path="ScreenSender.Desktop.Tests/ScreenSender.Desktop.Tests.csproj" />
   <Project Path="ScreenSender.Windows.Tests/ScreenSender.Windows.Tests.csproj" />
 </Solution>

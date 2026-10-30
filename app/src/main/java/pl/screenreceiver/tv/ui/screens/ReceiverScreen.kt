@@ -74,6 +74,7 @@ fun ReceiverScreen(
                 style = MaterialTheme.typography.headlineLarge,
                 color = ReceiverText,
             )
+            Text(text = stringResource(R.string.publisher_name), style = MaterialTheme.typography.bodyLarge, color = ReceiverAccent)
             Text(text = state.deviceName, style = MaterialTheme.typography.bodyLarge, color = ReceiverSecondaryText)
         }
 

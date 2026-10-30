@@ -24,8 +24,8 @@
 
     <application
         android:allowBackup="true"
-        android:banner="@drawable/tv_banner"
-        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/tv_banner_pk"
+        android:icon="@mipmap/ic_launcher_pk"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenReceiver">
