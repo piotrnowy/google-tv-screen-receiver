@@ -23,11 +23,13 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import pl.screenreceiver.tv.MainActivity
 import pl.screenreceiver.tv.R
+import pl.screenreceiver.tv.network.ReceiverAdvertisement
 import pl.screenreceiver.tv.overlay.ProjectorOverlayBridge
 
 class ReceiverService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val runtime by lazy { ReceiverRuntime.get(this) }
+    private val advertisement by lazy { ReceiverAdvertisement(this) }
 
     override fun onCreate() {
         super.onCreate()
@@ -36,6 +38,13 @@ class ReceiverService : Service() {
             notifications.createNotificationChannel(NotificationChannel(CHANNEL, "Screen receiver", NotificationManager.IMPORTANCE_LOW))
         }
         startForeground(NOTIFICATION_ID, notification("Starting receiver"))
+        scope.launch {
+            combine(runtime.listening, runtime.connected, runtime.uiState) { listening, connected, state ->
+                Triple(listening, connected, state.deviceName to state.signalingPort)
+            }.distinctUntilChanged().collect { (listening, connected, identity) ->
+                advertisement.update(listening, identity.first, identity.second, connected)
+            }
+        }
         scope.launch {
             combine(runtime.listening, runtime.connected, runtime.uiState) { listening, connected, state ->
                 streamingStatus(listening, connected, state.errorMessage)
@@ -81,6 +90,7 @@ class ReceiverService : Service() {
     }
 
     override fun onDestroy() {
+        advertisement.close()
         scope.cancel()
         runtime.release()
         super.onDestroy()

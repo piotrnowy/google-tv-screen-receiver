@@ -26,7 +26,7 @@ public sealed record SenderOptions(string Host = "", int Port = 53530, string Mo
         Ctrl+C stops capture and disconnects.
         """;
 
-    public static SenderOptions Parse(string[] args, string? configPath = null)
+    public static SenderOptions Parse(string[] args, string? configPath = null, bool requireHost = true)
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
         configPath ??= Path.Combine(AppContext.BaseDirectory, "appsettings.json");
@@ -58,8 +58,8 @@ public sealed record SenderOptions(string Host = "", int Port = 53530, string Mo
         foreach (var (key, value) in commandLineValues) values[key] = value;
 
         var host = values.GetValueOrDefault("--host", "");
-        if (string.IsNullOrWhiteSpace(host)) throw new ArgumentException("Set --host or host in appsettings.json to the TV's IP address or local hostname.");
-        if (Uri.CheckHostName(host) == UriHostNameType.Unknown)
+        if (requireHost && string.IsNullOrWhiteSpace(host)) throw new ArgumentException("Set --host or host in appsettings.json to the TV's IP address or local hostname.");
+        if (!string.IsNullOrEmpty(host) && Uri.CheckHostName(host) == UriHostNameType.Unknown)
             throw new ArgumentException("--host must be an IP address or local hostname, without a scheme or port.");
         int port = Number("--port", 53530, 1, 65535);
         int width = Number("--width", 1920, 2, 7680);

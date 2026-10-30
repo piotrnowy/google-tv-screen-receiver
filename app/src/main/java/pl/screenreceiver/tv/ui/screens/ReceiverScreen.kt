@@ -146,6 +146,8 @@ fun ReceiverScreen(
             }
         }
 
+        ReceiverNameSettings(state.deviceName)
+
         RemoteShortcutDiagnostic(
             state = shortcutDiagnostic,
             serviceEnabled = shortcutServiceEnabled,

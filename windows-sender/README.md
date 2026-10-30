@@ -2,6 +2,14 @@
 
 Sends a Windows 11 desktop and default system playback audio to the Google TV receiver using TCP signaling on port 53530 and a single WebRTC connection carrying H.264 video and Opus audio.
 
+## Projector Connect desktop app
+
+Run `dotnet run --project ScreenSender.Desktop` from this directory. The Windows window discovers named, active receivers on the local network. Choose a row and **Connect selected** to start sharing; **Disconnect** stops sharing and restores Windows audio. Multiple receivers remain separate even when they have the same name. **Connect by address** supports older receiver versions or networks that block multicast.
+
+The TV app now advertises its Google TV name by default. Use **Receiver name → CHANGE RECEIVER NAME** inside Screen Receiver to save a custom name. See [desktop app setup and discovery behavior](../docs/public/windows-app.md).
+
+The existing `ScreenSender.Windows` command-line executable and its options remain available. Both front ends use the same streaming lifecycle, capture, encoding, audio restoration and media-key control code.
+
 ## Requirements
 
 - Windows 11 x64 with an interactive desktop and an attached monitor.
@@ -77,10 +85,12 @@ When projector-only mode and remote volume are active, Windows mute/up/down keys
 
 ```powershell
 dotnet build -c Release
-dotnet publish ScreenSender.Windows/ScreenSender.Windows.csproj -c Release -r win-x64
+dotnet publish ScreenSender.Desktop/ScreenSender.Desktop.csproj -c Release -r win-x64
 ```
 
-Output: `publish/ScreenSender.Windows.exe`. The app is self-contained for .NET; native FFmpeg remains external. If a source `appsettings.json` exists, it is copied to `publish/`. Otherwise copy the example there, name it `appsettings.json`, and configure `host`.
+Output: `publish/ScreenSender.Desktop.exe`. The desktop app is self-contained for .NET and Windows Forms; native FFmpeg remains external. Discovery needs no saved host. An existing source `appsettings.json` is copied to `publish/` for audio settings and the manual-address field. Otherwise, the example can be copied there as `appsettings.json` if saved settings are wanted.
+
+To publish the console sender separately, run `dotnet publish ScreenSender.Windows/ScreenSender.Windows.csproj -c Release -r win-x64`; its output remains `publish/ScreenSender.Windows.exe`.
 
 Place shared FFmpeg libraries in `publish/ffmpeg/bin`, or use another discovery path. Then:
 
@@ -88,7 +98,7 @@ Place shared FFmpeg libraries in `publish/ffmpeg/bin`, or use another discovery 
 .\Create-DesktopShortcut.ps1
 ```
 
-The helper creates `Projektor.lnk` on the current user's desktop, targeting the published executable with `publish` as its working directory. Existing deployments and their local configuration are excluded from Git.
+The helper creates `Projektor.lnk` on the current user's desktop, targeting `ScreenSender.Desktop.exe` with `publish` as its working directory. Existing local configuration and publish output are excluded from Git.
 
 ## Physical check
 

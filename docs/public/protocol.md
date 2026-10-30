@@ -20,3 +20,13 @@ The TV answers a sender's Unified Plan offer. Both sides queue incoming ICE unti
 The receiver renders video with aspect-fit scaling and plays audio through the media stream. The sender captures one desktop monitor and default Windows playback through WASAPI loopback, without microphone capture. Its FFmpeg path respects packed BGR stride and converts/scales to YUV420P before H.264 encoding. Opus uses 48 kHz stereo, with 20 ms frames.
 
 Signaling is plaintext and unauthenticated. Use a trusted local network; do not forward the signaling port to the internet. Endpoint addresses, sender names and SDP/ICE can appear in diagnostics. Runtime device identification is sent to the connected receiver, not to a cloud backend.
+
+## Receiver discovery
+
+Discovery is independent of the TCP/media protocol. While the foreground receiver has actually bound its signaling listener, Android NSD advertises `_screenreceiver._tcp.local` over mDNS (UDP 5353). The SRV record supplies the real signaling port. Discovery never opens TCP, creates a PeerConnection, closes the overlay or changes volume.
+
+TXT attributes: `protocol=1`, `id=<app-scoped UUID>`, `name64=<base64 of UTF-8 receiver name>`, `busy=0|1`. The ASCII instance label uses an app-generated identifier; no device serial, account or hardware identifier is used. The name is base64-encoded because the pinned Windows DNS parser accepts only ASCII TXT character strings. This encoding is not encryption; the friendly name is intentionally visible on the local network.
+
+Windows resolves PTR/SRV/TXT/A records, including fragmented answers, checks discovery version and name/ID validity, and deduplicates by app identity. IPv4 browsing refreshes every five seconds and expires unrefreshed records after at most 30 seconds. DNS goodbye removes a stopped receiver earlier. Manual IPv4/hostname/IPv6 connections remain available. Announcements are withdrawn/replaced when the listener stops, the name changes or the connected/busy state changes.
+
+Discovery does not guarantee that the TV will remain reachable when Connect is clicked; a connection timeout/error remains visible in the Windows window. Multicast normally stays on one LAN segment and may be blocked by guest Wi-Fi, VPN/firewall rules or VLAN boundaries.

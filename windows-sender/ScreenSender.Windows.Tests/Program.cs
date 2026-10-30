@@ -15,6 +15,8 @@ using SIPSorceryMedia.Abstractions;
 var checks = new (string Name, Func<Task> Run)[]
 {
     ("CLI defaults and validation", Options),
+    ("Named DNS-SD discovery, fragments, multiple receivers, busy/rename, goodbye and expiry", DiscoveryChecks.Discovery),
+    ("Manual endpoint validation and GUI defaults preserve CLI host requirement", DiscoveryChecks.ManualAndDefaults),
     ("Kotlin wire message compatibility", Messages),
     ("Malformed messages", Malformed),
     ("Aspect fit and H264 levels", Scaling),

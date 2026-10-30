@@ -1,7 +1,6 @@
 package pl.screenreceiver.tv.receiver
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
@@ -17,6 +16,7 @@ import kotlinx.coroutines.launch
 import pl.screenreceiver.tv.model.ReceiverEvent
 import pl.screenreceiver.tv.model.ReceiverState
 import pl.screenreceiver.tv.network.LocalIpAddressProvider
+import pl.screenreceiver.tv.network.ReceiverIdentity
 import pl.screenreceiver.tv.network.ReceiverServer
 import pl.screenreceiver.tv.network.SignalingMessage
 import pl.screenreceiver.tv.network.StreamSession
@@ -38,7 +38,7 @@ class ReceiverRuntime private constructor(private val context: Context) {
     private val localIpAddressProvider = LocalIpAddressProvider()
     private val remoteVolume = RemoteVolumeController(AndroidMediaVolumeController(context)) { Log.i("Volume", it) }
     private val state = MutableStateFlow(
-        ReceiverState(deviceName = Build.MODEL.takeIf { it.isNotBlank() } ?: "Google TV"),
+        ReceiverState(deviceName = ReceiverIdentity.name(context)),
     )
     val uiState = state.asStateFlow()
     private val video = MutableStateFlow<VideoOutput?>(null)
@@ -104,6 +104,12 @@ class ReceiverRuntime private constructor(private val context: Context) {
 
     fun reportFailure(message: String) {
         state.update { it.reduce(ReceiverEvent.Failure(message)) }
+    }
+
+    fun rename(value: String): String {
+        val name = ReceiverIdentity.saveName(context, value)
+        state.update { it.copy(deviceName = name) }
+        return name
     }
 
     private suspend fun startReceiver() {

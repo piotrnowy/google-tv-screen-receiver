@@ -2,11 +2,11 @@
     <string name="app_name">Screen Receiver</string>
     <string name="screen_title">SCREEN RECEIVER</string>
     <string name="status_label">Status:</string>
-    <string name="status_waiting">WAITING FOR IPHONE</string>
-    <string name="status_iphone_connected">IPHONE CONNECTED</string>
+    <string name="status_waiting">READY TO CONNECT</string>
+    <string name="status_iphone_connected">SENDER CONNECTED</string>
     <string name="status_negotiating">NEGOTIATING</string>
     <string name="status_streaming">STREAMING</string>
-    <string name="connect_iphone_label">Connect iPhone to:</string>
+    <string name="connect_iphone_label">Connect from Windows:</string>
     <string name="signaling_port_label">Signaling port:</string>
     <string name="webrtc_label">WebRTC:</string>
     <string name="webrtc_waiting">Waiting</string>
@@ -15,7 +15,7 @@
     <string name="status_error">ERROR</string>
     <string name="local_ip_label">Local IP:</string>
     <string name="unavailable">Unavailable</string>
-    <string name="same_wifi_hint">Make sure your iPhone and Google TV are connected to the same Wi-Fi network.</string>
+    <string name="same_wifi_hint">Open Projector Connect on Windows to find this receiver. Keep both devices on the same local network.</string>
     <string name="shortcut_service_name">Projector Control</string>
     <string name="shortcut_service_description">Hold HOME for 800 ms to open Projector Control. Short HOME works normally. Provides screen brightness, sleep timer, streaming and Google TV volume. Does not read screen contents.</string>
     <string name="shortcut_diagnostic_title">Remote shortcut status</string>

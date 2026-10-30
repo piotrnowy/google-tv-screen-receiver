@@ -5,6 +5,7 @@ Stream a Windows 11 desktop and system audio to Google TV over your local networ
 ## What works
 
 - H.264 video and Opus stereo audio over one WebRTC connection.
+- A Windows connection window that discovers named receivers on the LAN and lets you choose one before sharing.
 - Windows desktop and WASAPI system-audio capture; no microphone capture.
 - Background receiver with automatic stream display when a sender connects.
 - Projector-only audio mode that restores the previous Windows audio state on disconnect.
@@ -12,7 +13,7 @@ Stream a Windows 11 desktop and system audio to Google TV over your local networ
 - Long HOME opens Projector Control; short HOME keeps normal launcher behavior.
 - D-pad/BACK navigation, persistent software screen dimming and sleep-timer UI/state.
 
-Screen dimming changes the Android image, not projector LED power. Actual projector shutdown needs a separately verified control endpoint. No built-in Android hardware-control path has been verified. iPhone sending, AirPlay and automatic receiver discovery are not implemented.
+Screen dimming changes the Android image, not projector LED power. Actual projector shutdown needs a separately verified control endpoint. No built-in Android hardware-control path has been verified. iPhone sending and AirPlay are not implemented.
 
 ## Android build and setup
 
@@ -47,10 +48,12 @@ cd windows-sender
 dotnet restore
 dotnet build
 dotnet run --project ScreenSender.Windows.Tests
-dotnet run --project ScreenSender.Windows -- --host '<TV_IP>'
+dotnet run --project ScreenSender.Desktop
 ```
 
-For a saved address, copy `ScreenSender.Windows/appsettings.example.json` to the ignored `ScreenSender.Windows/appsettings.json` and set its `host`. Existing local settings take precedence over built-in options; CLI options take precedence over the file. There is no built-in TV address.
+Projector Connect lists named receivers as Available or In use and waits for you to choose Connect. On Google TV, **Receiver name → CHANGE RECEIVER NAME** changes the name advertised to Windows. Discovery runs separately from streaming and never probes the media connection. See the [Windows app guide](docs/public/windows-app.md).
+
+The command-line sender remains available: `dotnet run --project ScreenSender.Windows -- --host '<TV_IP>'`. For a saved manual address, copy `ScreenSender.Windows/appsettings.example.json` to the ignored `ScreenSender.Windows/appsettings.json` and set its `host`. CLI options override that file; no TV address is built in.
 
 See the [Windows sender guide](windows-sender/README.md) for FFmpeg setup, publishing, audio modes and media keys.
 

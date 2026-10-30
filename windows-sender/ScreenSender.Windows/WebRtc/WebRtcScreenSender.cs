@@ -36,6 +36,7 @@ public sealed class WebRtcScreenSender : IAsyncDisposable
     private bool _answerSet;
     private int _started;
     private int _disposed;
+    public Action? StreamingStarted { get; set; }
     public (long SendAudioCalls, uint PacketsSent, uint PayloadBytes) AudioStatistics =>
         (Interlocked.Read(ref _audioSendCalls), _peer.AudioRtcpSession?.PacketsSentCount ?? 0, _peer.AudioRtcpSession?.OctetsSentCount ?? 0);
 
@@ -131,6 +132,7 @@ public sealed class WebRtcScreenSender : IAsyncDisposable
         if (_audio is not null && _audioOutput is not null)
             _audioOutput.Activate(_audio.RenderEndpointId, CurrentAudioActivity());
         if (_remoteVolume is not null) await _remoteVolume.ActivateAsync(_signaling, token);
+        StreamingStarted?.Invoke();
         throw new InvalidOperationException(await _anyFailure.WaitAsync(token));
     }
 

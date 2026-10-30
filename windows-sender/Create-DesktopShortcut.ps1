@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $publishDirectory = Join-Path $PSScriptRoot 'publish'
-$executable = Join-Path $publishDirectory 'ScreenSender.Windows.exe'
+$executable = Join-Path $publishDirectory 'ScreenSender.Desktop.exe'
 if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
     throw "Published sender not found at '$executable'. Run dotnet publish first."
 }
