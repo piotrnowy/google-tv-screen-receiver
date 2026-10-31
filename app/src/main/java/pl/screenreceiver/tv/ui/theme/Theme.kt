@@ -10,7 +10,8 @@ import androidx.tv.material3.darkColorScheme
 fun ScreenReceiverTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
-            primary = ReceiverAccent,
+            primary = ReceiverPrimary,
+            onPrimary = ReceiverText,
             background = ReceiverBackground,
             surface = ReceiverSurface,
             onBackground = ReceiverText,

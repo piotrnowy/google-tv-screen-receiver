@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,7 +20,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.doOnTextChanged
-import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.screenreceiver.tv.receiver.ReceiverRuntime
@@ -35,9 +35,10 @@ fun ReceiverNameSettings(name: String) {
     fun hideKeyboard() {
         (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
     }
+    DisposableEffect(view) { onDispose { hideKeyboard() } }
     var message by remember { mutableStateOf("This name appears in the Windows app on your local network") }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Receiver name", color = ReceiverText)
+        TvInfoCard("Receiver name", detail = name)
         if (editing) AndroidView(
             modifier = Modifier.fillMaxWidth(),
             factory = { viewContext -> EditText(viewContext).apply {
@@ -54,17 +55,17 @@ fun ReceiverNameSettings(name: String) {
                     (viewContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
                 }
             } },
-        ) else Text(name, color = ReceiverText)
-        if (editing) Button(onClick = {
+        )
+        if (editing) TvAction("Save receiver name", onClick = {
             message = runCatching {
                 val saved = ReceiverRuntime.get(context).rename(draft)
                 hideKeyboard(); editing = false
                 "Receiver name saved: $saved"
             }
                 .getOrElse { it.message ?: "Could not save receiver name" }
-        }) { Text("SAVE RECEIVER NAME") }
-        if (editing) Button(onClick = { hideKeyboard(); draft = name; editing = false }) { Text("CANCEL") }
-        else Button(onClick = { editing = true }) { Text("CHANGE RECEIVER NAME") }
-        Text(message, color = ReceiverText)
+        }, modifier = Modifier.fillMaxWidth(), tag = "save-receiver-name")
+        if (editing) TvAction("Cancel name change", onClick = { hideKeyboard(); draft = name; editing = false }, modifier = Modifier.fillMaxWidth(), tag = "cancel-receiver-name")
+        else TvAction("Change receiver name", onClick = { editing = true }, modifier = Modifier.fillMaxWidth(), tag = "change-receiver-name")
+        TvInfoCard("Name information", detail = message)
     }
 }

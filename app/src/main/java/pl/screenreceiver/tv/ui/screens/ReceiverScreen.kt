@@ -1,23 +1,21 @@
 package pl.screenreceiver.tv.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -27,13 +25,11 @@ import pl.screenreceiver.tv.R
 import pl.screenreceiver.tv.model.ReceiverState
 import pl.screenreceiver.tv.model.ReceiverStatus
 import pl.screenreceiver.tv.shortcut.ShortcutDiagnosticState
-import pl.screenreceiver.tv.ui.theme.ReceiverAccent
-import pl.screenreceiver.tv.ui.theme.ReceiverBackground
-import pl.screenreceiver.tv.ui.theme.ReceiverError
-import pl.screenreceiver.tv.ui.theme.ReceiverSecondaryText
-import pl.screenreceiver.tv.ui.theme.ReceiverSurface
-import pl.screenreceiver.tv.ui.theme.ReceiverText
-import pl.screenreceiver.tv.ui.theme.ScreenReceiverTheme
+import pl.screenreceiver.tv.ui.theme.*
+
+private enum class ReceiverPage(val label: String) {
+    Receiver("Receiver"), Settings("Settings"), Technical("Technical details")
+}
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -51,135 +47,184 @@ fun ReceiverScreen(
     notificationsAllowed: Boolean = false,
     onRequestNotifications: () -> Unit = {},
 ) {
-    val statusText = when (state.receiverStatus) {
-        ReceiverStatus.WAITING -> R.string.status_waiting
-        ReceiverStatus.IPHONE_CONNECTED -> R.string.status_iphone_connected
-        ReceiverStatus.NEGOTIATING -> R.string.status_negotiating
-        ReceiverStatus.STREAMING -> R.string.status_streaming
-        ReceiverStatus.ERROR -> R.string.status_error
+    var page by rememberSaveable { mutableStateOf(ReceiverPage.Receiver) }
+    val receiverList = rememberLazyListState()
+    val settingsList = rememberLazyListState()
+    val technicalList = rememberLazyListState()
+    val list = when (page) {
+        ReceiverPage.Receiver -> receiverList
+        ReceiverPage.Settings -> settingsList
+        ReceiverPage.Technical -> technicalList
     }
-    val statusColor = if (state.receiverStatus == ReceiverStatus.ERROR) ReceiverError else ReceiverAccent
+    val firstFocus = remember { FocusRequester() }
+    var needsInitialFocus by remember(page) { mutableStateOf(true) }
+    val initialFocusModifier = Modifier.focusRequester(firstFocus).onGloballyPositioned {
+        if (needsInitialFocus) {
+            needsInitialFocus = false
+            firstFocus.requestFocus()
+        }
+    }
+    val scrollHint by remember(list) {
+        derivedStateOf {
+            when {
+                list.canScrollBackward && list.canScrollForward -> "More above and below"
+                list.canScrollForward -> "More below"
+                list.canScrollBackward -> "More above"
+                else -> "All information visible"
+            }
+        }
+    }
+    BackHandler(enabled = page != ReceiverPage.Receiver) { page = ReceiverPage.Receiver }
+    LaunchedEffect(page) {
+        list.scrollToItem(0)
+    }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(ReceiverBackground)
-            .padding(horizontal = 48.dp, vertical = 32.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier.fillMaxSize().background(ReceiverBackground).padding(horizontal = 32.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(R.string.screen_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = ReceiverText,
-            )
-            Text(text = stringResource(R.string.publisher_name), style = MaterialTheme.typography.bodyLarge, color = ReceiverAccent)
-            Text(text = state.deviceName, style = MaterialTheme.typography.bodyLarge, color = ReceiverSecondaryText)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Image(painterResource(R.mipmap.ic_launcher_pk), "P&K Applications logo", Modifier.size(44.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge, color = ReceiverText)
+                Text(stringResource(R.string.publisher_name), style = MaterialTheme.typography.labelMedium, color = ReceiverSecondaryText)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ReceiverPage.entries.forEach { destination ->
+                TvAction(
+                    destination.label,
+                    onClick = { page = destination },
+                    selected = page == destination,
+                    tag = "tab-" + destination.name,
+                )
+            }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = stringResource(R.string.connect_iphone_label),
-                    style = MaterialTheme.typography.labelLarge, color = ReceiverSecondaryText)
-                Text(text = state.connectionAddress ?: stringResource(R.string.unavailable),
-                    style = MaterialTheme.typography.headlineLarge, color = ReceiverText)
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.status_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = ReceiverSecondaryText,
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Box(Modifier.size(12.dp).background(statusColor, CircleShape))
-                    Text(
-                        text = stringResource(statusText),
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = statusColor,
-                    )
+        // This bounded viewport stays separate from the header and navigation hints.
+        // Each information card can receive D-pad focus; Foundation scrolls focused items into view.
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth().testTag("page-content"),
+            state = list,
+            contentPadding = PaddingValues(4.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            when (page) {
+                ReceiverPage.Receiver -> {
+                    item("receiver-status") {
+                        val status = when (state.receiverStatus) {
+                            ReceiverStatus.WAITING -> if (state.localIpAddress == null) "Waiting for a network" else "Ready to connect"
+                            ReceiverStatus.IPHONE_CONNECTED -> "Sender connected"
+                            ReceiverStatus.NEGOTIATING -> "Connecting..."
+                            ReceiverStatus.STREAMING -> "Screen sharing active"
+                            ReceiverStatus.ERROR -> "Connection needs attention"
+                        }
+                        val statusColor = when (state.receiverStatus) {
+                            ReceiverStatus.ERROR -> ReceiverError
+                            ReceiverStatus.STREAMING -> ReceiverSuccess
+                            ReceiverStatus.IPHONE_CONNECTED, ReceiverStatus.NEGOTIATING -> ReceiverInfo
+                            ReceiverStatus.WAITING -> ReceiverAccent
+                        }
+                        TvInfoCard(
+                            status,
+                            initialFocusModifier.testTag("receiver-status"),
+                            titleColor = statusColor,
+                        ) {
+                            Text(state.deviceName, style = MaterialTheme.typography.titleLarge, color = ReceiverText)
+                            Text(
+                                if (state.localIpAddress == null) "Connect this TV and your computer to the same local network."
+                                else "Choose this name in Projector Connect on Windows.",
+                                style = MaterialTheme.typography.bodyLarge, color = ReceiverSecondaryText,
+                            )
+                            Text(
+                                "Manual address: " + (state.connectionAddress ?: "Not available yet"),
+                                style = MaterialTheme.typography.bodyLarge, color = ReceiverText,
+                            )
+                            state.connectedDeviceName?.let {
+                                Text("Connected sender: " + it, style = MaterialTheme.typography.bodyLarge, color = ReceiverText)
+                            }
+                        }
+                    }
+                    if (state.receiverStatus == ReceiverStatus.ERROR) {
+                        item("friendly-error") {
+                            TvInfoCard("Sharing could not continue", detail = "Check the sender and network, then try connecting again. The full error is available in Technical details.", titleColor = ReceiverError)
+                        }
+                        item("error-details-action") {
+                            TvAction("View connection details", { page = ReceiverPage.Technical }, Modifier.fillMaxWidth())
+                        }
+                    }
+                    item("how-to-share") {
+                        TvInfoCard("Share from your computer", detail = "1. Open Projector Connect on Windows.\n2. Select this receiver and choose Share screen.\n3. Use Stop sharing on Windows when you are finished.")
+                    }
+                    item("receiver-settings-action") {
+                        TvAction("Receiver and remote settings", { page = ReceiverPage.Settings }, Modifier.fillMaxWidth())
+                    }
+                    item("receiver-end") {
+                        TvInfoCard("Your remote", Modifier.testTag("receiver-end"), detail = "Use UP / DOWN to move and scroll. Hold HOME for about one second to open Projector Control. The receiver can continue listening in the background.")
+                    }
+                }
+                ReceiverPage.Settings -> {
+                    item("settings-start") {
+                        TvInfoCard("Receiver settings", initialFocusModifier.testTag("settings-start"), detail = "Change the receiver name and review remote access and permissions. UP / DOWN scrolls to every setting.")
+                    }
+                    item("receiver-name") { ReceiverNameSettings(state.deviceName) }
+                    item("shortcut-access") {
+                        TvInfoCard("HOME shortcut", detail = if (shortcutServiceEnabled) "Projector Control is enabled. Hold HOME for about one second; short HOME opens the normal TV launcher."
+                        else "Enable Projector Control in Accessibility settings to use the long-HOME shortcut.")
+                    }
+                    item("shortcut-settings") {
+                        TvAction("Open accessibility settings", onOpenAccessibilitySettings, Modifier.fillMaxWidth(), tag = "accessibility-settings")
+                    }
+                    item("recovery-info") {
+                        TvInfoCard("Startup recovery", detail = when {
+                            shortcutRecoveryEnabled -> "On. Restores shortcut selection after restart. Turn this off before disabling Projector Control in Accessibility."
+                            shortcutRecoveryAvailable -> "Off. You can enable recovery if the TV resets shortcut access after restart."
+                            else -> "One-time computer setup is needed to enable recovery. HOME does not need calibration; the key history resets when the app restarts."
+                        })
+                    }
+                    item("recovery-action") {
+                        TvAction(
+                            if (shortcutRecoveryEnabled) "Turn startup recovery off" else "Turn startup recovery on",
+                            onToggleShortcutRecovery, Modifier.fillMaxWidth(), enabled = shortcutRecoveryAvailable, tag = "startup-recovery",
+                        )
+                    }
+                    item("projector-settings") {
+                        ProjectorSettingsPanel(shortcutServiceEnabled, timerAllowed, onOpenTimerSettings, notificationsAllowed, onRequestNotifications)
+                    }
+                    item("settings-end") {
+                        TvInfoCard("End of settings", Modifier.testTag("settings-end"), detail = "Use UP to review earlier settings, or BACK to return to Receiver.")
+                    }
+                }
+                ReceiverPage.Technical -> {
+                    item("connection-details") {
+                        TvInfoCard("Connection details", initialFocusModifier.testTag("technical-start")) {
+                            Text("Receiver: " + state.deviceName, color = ReceiverText)
+                            Text("Address: " + (state.connectionAddress ?: "Unavailable"), color = ReceiverText)
+                            Text("State: " + state.receiverStatus.name, color = ReceiverSecondaryText)
+                            Text("Video: H.264  |  Audio: Opus  |  Local network discovery", color = ReceiverSecondaryText)
+                        }
+                    }
+                    // Split diagnostic text into readable focus targets rather than truncating it
+                    // or creating one card taller than the viewport.
+                    state.errorMessage?.chunked(240)?.forEachIndexed { index, part ->
+                        item("error-" + index) {
+                            TvInfoCard("Error details (" + (index + 1) + ")", Modifier.testTag("error-part-" + index), detail = part, titleColor = ReceiverError)
+                        }
+                    }
+                    item("shortcut-diagnostics") {
+                        RemoteShortcutDiagnostic(shortcutDiagnostic, shortcutServiceEnabled, shortcutRecoveryAvailable, shortcutRecoveryEnabled)
+                    }
+                    item("advanced-settings") { ProjectorAddressSettings() }
+                    item("technical-end") {
+                        TvInfoCard("End of technical details", Modifier.testTag("technical-end"), detail = "All connection and remote diagnostics are above. BACK returns to Receiver.")
+                    }
                 }
             }
-
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .background(ReceiverSurface, RoundedCornerShape(16.dp))
-                    .padding(24.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                ReceiverDetail(
-                    label = stringResource(R.string.signaling_port_label),
-                    value = state.signalingPort.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                ReceiverDetail(
-                    label = stringResource(R.string.local_ip_label),
-                    value = state.localIpAddress ?: stringResource(R.string.unavailable),
-                    modifier = Modifier.weight(1f),
-                )
-                ReceiverDetail(
-                    label = stringResource(R.string.webrtc_label),
-                    value = stringResource(when (state.receiverStatus) {
-                        ReceiverStatus.WAITING, ReceiverStatus.IPHONE_CONNECTED -> R.string.webrtc_waiting
-                        ReceiverStatus.NEGOTIATING -> R.string.webrtc_negotiating
-                        ReceiverStatus.STREAMING -> R.string.webrtc_streaming
-                        ReceiverStatus.ERROR -> R.string.status_error
-                    }),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            state.connectedDeviceName?.let { name ->
-                Text(text = name, style = MaterialTheme.typography.bodyLarge, color = ReceiverText)
-            }
-
-            state.errorMessage?.let { message ->
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = ReceiverError,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
-
-        ReceiverNameSettings(state.deviceName)
-
-        RemoteShortcutDiagnostic(
-            state = shortcutDiagnostic,
-            serviceEnabled = shortcutServiceEnabled,
-            onOpenAccessibilitySettings = onOpenAccessibilitySettings,
-            recoveryAvailable = shortcutRecoveryAvailable,
-            recoveryEnabled = shortcutRecoveryEnabled,
-            onToggleRecovery = onToggleShortcutRecovery,
-        )
-
-        ProjectorSettingsPanel(shortcutServiceEnabled, timerAllowed, onOpenTimerSettings, notificationsAllowed, onRequestNotifications)
-
-        Text(
-            text = stringResource(R.string.same_wifi_hint),
-            style = MaterialTheme.typography.bodyLarge,
-            color = ReceiverSecondaryText,
-        )
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun ReceiverDetail(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge, color = ReceiverSecondaryText)
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleLarge,
-            color = ReceiverText,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("UP / DOWN move  |  OK select  |  BACK return", style = MaterialTheme.typography.labelMedium, color = ReceiverSecondaryText)
+            Text(scrollHint, style = MaterialTheme.typography.labelMedium, color = ReceiverAccent, modifier = Modifier.testTag("scroll-hint"))
+        }
     }
 }
 
@@ -187,6 +232,6 @@ private fun ReceiverDetail(label: String, value: String, modifier: Modifier = Mo
 @Composable
 private fun ReceiverScreenPreview() {
     ScreenReceiverTheme {
-        ReceiverScreen(ReceiverState(deviceName = "Living Room TV", localIpAddress = "192.168.1.42"))
+        ReceiverScreen(ReceiverState(deviceName = "Living Room TV", localIpAddress = "192.0.2.10"))
     }
 }
