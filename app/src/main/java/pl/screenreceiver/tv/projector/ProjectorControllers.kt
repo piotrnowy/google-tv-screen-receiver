@@ -24,10 +24,16 @@ object ProjectorControllers {
 
     fun create(context: Context): ProjectorController {
         val address = address(context)
-        val transport = if (address.isBlank()) null else runCatching {
+        if (address.isBlank()) return LocalProjectorController(context)
+        val transport = runCatching {
             val (host, port) = endpoint(address)
             TcpProjectorTransport(host, port)
         }.getOrNull()
         return ViewSonicProjectorController(transport) { Log.i("ProjectorControl", it) }
     }
+
+    fun powerOffUnavailableReason(context: Context): String? =
+        if (address(context).isBlank() && !LocalProjectorController(context).authorized) {
+            "Authorize automatic projector power-off in the receiver's Projector Control settings first"
+        } else null
 }

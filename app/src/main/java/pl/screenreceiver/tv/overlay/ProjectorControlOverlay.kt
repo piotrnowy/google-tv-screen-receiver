@@ -126,7 +126,7 @@ class ProjectorControlOverlay(private val service: AccessibilityService) {
                     openTimerSettings()
                 } else message = runCatching {
                     timer.set(state.selectedSleep) + if (state.selectedSleep > 0 && ProjectorControllers.address(service).isBlank()) {
-                        "; projector disconnected, power-off will only be logged"
+                        "; projector will receive HDMI-CEC standby"
                     } else ""
                 }.getOrElse { "Timer not set: ${it.message}" }
             }

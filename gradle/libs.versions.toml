@@ -12,6 +12,7 @@ junit = "4.13.2"
 webrtc = "150.7871.01"
 coroutines = "1.10.2"
 json = "20240303"
+dadb = "1.2.10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,6 +34,7 @@ webrtc = { module = "io.github.webrtc-sdk:android", version.ref = "webrtc" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 json = { module = "org.json:json", version.ref = "json" }
+dadb = { module = "dev.mobile:dadb", version.ref = "dadb" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

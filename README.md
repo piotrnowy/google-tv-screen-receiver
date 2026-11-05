@@ -1,6 +1,6 @@
 # Google TV Screen Receiver
 
-Stream a Windows 11 desktop and system audio to Google TV over your local network. Includes a remote-controlled Projector Control overlay, tested on a ViewSonic X1-4K Pro.
+Stream a Windows 11 or macOS desktop and system audio to Google TV over your local network. Includes a remote-controlled Projector Control overlay, tested on a ViewSonic X1-4K Pro.
 
 ## What works
 
@@ -13,7 +13,7 @@ Stream a Windows 11 desktop and system audio to Google TV over your local networ
 - Long HOME opens Projector Control; short HOME keeps normal launcher behavior.
 - D-pad/BACK navigation, persistent software screen dimming and sleep-timer UI/state.
 
-Screen dimming changes the Android image, not projector LED power. Actual projector shutdown needs a separately verified control endpoint. No built-in Android hardware-control path has been verified. iPhone sending and AirPlay are not implemented.
+Screen dimming changes the Android image, not projector LED power. The sleep timer can send direct HDMI-CEC standby after one-time local power-control authorization; see the Projector Control setup guide. LED brightness control has not been verified. iPhone sending and AirPlay are not implemented.
 
 ## Android build and setup
 
@@ -57,6 +57,19 @@ The command-line sender remains available: `dotnet run --project ScreenSender.Wi
 
 See the [Windows sender guide](windows-sender/README.md) for FFmpeg setup, publishing, audio modes and media keys.
 
+## macOS sender
+
+[Projector Connect for macOS](macos-sender/README.md) shares a selected monitor and system audio using the same receiver protocol and Windows app design. Requires macOS 15 or newer and Node.js 22 or newer for building.
+
+```sh
+cd macos-sender
+npm ci
+npm test
+npm run pack
+```
+
+Open the generated `Projector Connect.app` in `dist/mac-arm64/` (Apple Silicon) or `dist/mac/` (Intel), select a receiver, and choose a monitor in the native macOS picker. Allow screen and system-audio recording when prompted. Local Mac audio remains on during sharing; projector-only muting is currently Windows-only. See the macOS guide for permissions, development mode and distribution.
+
 ## Network and architecture
 
 ```text
@@ -76,6 +89,7 @@ See the [protocol notes](docs/public/protocol.md). The Android app uses Kotlin/C
 
 - `app/`: Android receiver, Projector Control, resources and JVM tests.
 - `windows-sender/`: Windows sender, executable checks and publishing helper.
+- `macos-sender/`: macOS sender, protocol checks and macOS application packaging.
 - `gradle/`, `gradlew`, `gradlew.bat`: Gradle wrapper and dependency versions.
 - `Install-ProjectorControl.ps1`: optional explicit ADB setup for HOME startup recovery.
 - `docs/public/`: setup, protocol and source-publication notes.

@@ -16,8 +16,10 @@ class SleepTimerReceiver : BroadcastReceiver() {
             try {
                 if (intent.action == SleepTimerManager.EXPIRE) {
                     if (timer.claimExpiry(intent.getStringExtra("token"))) {
+                        timer.recordResult("Sleep timer expired: requesting projector power-off")
                         val result = ProjectorControllers.create(context).powerOff()
-                        timer.recordResult("Sleep timer expired: ${result.message}")
+                        val outcome = if (result.accepted) "expired" else "failed"
+                        timer.recordResult("Sleep timer $outcome: ${result.message}")
                     }
                 } else {
                     timer.restore()

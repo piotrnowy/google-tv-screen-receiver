@@ -9,6 +9,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import java.util.UUID
+import pl.screenreceiver.tv.projector.ProjectorControllers
 
 class SleepTimerManager(context: Context) {
     private val context = context.applicationContext
@@ -37,6 +38,7 @@ class SleepTimerManager(context: Context) {
             return@synchronized "Sleep timer cancelled"
         }
         check(canSchedule()) { "Enable Alarms & reminders before setting the sleep timer" }
+        ProjectorControllers.powerOffUnavailableReason(context)?.let { error(it) }
         val plan = SleepTimerPlan.create(minutes, System.currentTimeMillis(), SystemClock.elapsedRealtime(), bootCount(), UUID.randomUUID().toString())
         val previous = active()
         save(plan)
