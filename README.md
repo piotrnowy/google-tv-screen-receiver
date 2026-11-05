@@ -68,7 +68,7 @@ npm test
 npm run pack
 ```
 
-Open the generated `Projector Connect.app` in `dist/mac-arm64/` (Apple Silicon) or `dist/mac/` (Intel), select a receiver, and choose a monitor in the native macOS picker. Allow screen and system-audio recording when prompted. Local Mac audio remains on during sharing; projector-only muting is currently Windows-only. See the macOS guide for permissions, development mode and distribution.
+Open the generated `Projector Connect.app` in `dist/mac-arm64/` (Apple Silicon) or `dist/mac/` (Intel), select a receiver, and choose a monitor in the native macOS picker. Allow screen and system-audio recording when prompted. Audio plays only on the projector by default; enable **Play audio on this Mac** before connecting if playback on both devices is wanted. See the macOS guide for permissions, development mode and distribution.
 
 ## Network and architecture
 

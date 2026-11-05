@@ -1,6 +1,6 @@
 /* global sender */
 const $ = id => document.getElementById(id);
-let devices = [], selected, phase = 'ready', peer, stream, generation = 0, timeout, disconnectTimer, activeName = '', lastTarget;
+let devices = [], selected, phase = 'ready', peer, stream, generation = 0, timeout, disconnectTimer, activeName = '', lastTarget, discoveryFailed = false;
 let remoteReady = false, pendingIce = [], inbound = Promise.resolve();
 function log(message) { $('logs').textContent = ($('logs').textContent + `${new Date().toLocaleTimeString()} ${message}\n`).slice(-32000); }
 function render() {
@@ -8,7 +8,9 @@ function render() {
   $('primary').textContent = ({ ready: 'Share screen', connecting: 'Connecting...', connected: 'Stop sharing', error: 'Try again' })[phase];
   $('primary').disabled = !(phase === 'connected' || (idle && (phase === 'error' ? lastTarget : devices.some(d => d.id === selected && !d.busy))));
   $('cancel').hidden = phase !== 'connecting';
-  for (const id of ['audio', 'keys', 'address', 'connect']) $(id).disabled = !idle;
+  for (const id of ['audio', 'address', 'connect']) $(id).disabled = !idle;
+  $('mirror').disabled = !idle || !$('audio').checked;
+  $('keys').disabled = !idle || !$('audio').checked || $('mirror').checked;
   $('badge').textContent = ({ ready: 'Ready', connecting: 'Connecting', connected: 'Connected', error: 'Error' })[phase];
   $('devices').replaceChildren(...devices.map(device => {
     const button = document.createElement('button'); button.className = `device${selected === device.id ? ' selected' : ''}`;
@@ -18,7 +20,7 @@ function render() {
     text.append(name, address); button.append(text, badge); button.onclick = () => { selected = device.id; render(); }; return button;
   }));
   $('empty').hidden = devices.length > 0;
-  $('count').textContent = devices.length ? `${devices.length} device${devices.length === 1 ? '' : 's'} found` : 'Looking for nearby devices...';
+  $('count').textContent = devices.length ? `${devices.length} device${devices.length === 1 ? '' : 's'} found` : discoveryFailed ? 'Discovery unavailable' : 'Looking for nearby devices...';
 }
 function status(title, help) { $('title').textContent = title; $('help').textContent = help; }
 async function stop(error) {
@@ -37,14 +39,15 @@ async function share(address, name) {
   const attempt = ++generation; lastTarget = { address, name }; activeName = name;
   phase = 'connecting'; status(`Connecting to ${name}...`, 'Choose a display in the macOS screen picker.'); render();
   try {
-    await sender.connect(address);
+    await sender.connect(address, { playLocally: $('mirror').checked });
     if (attempt !== generation) return;
     timeout = setTimeout(() => stop('The receiver did not connect within 45 seconds.'), 45000);
-    const captured = await navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 30 } }, audio: $('audio').checked ? { channelCount: 2, sampleRate: 48000, echoCancellation: false, noiseSuppression: false, autoGainControl: false } : false });
+    const captured = await navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 30 } }, audio: $('audio').checked ? { channelCount: 2, sampleRate: 48000, echoCancellation: false, noiseSuppression: false, autoGainControl: false } : false, systemAudio: $('audio').checked ? 'include' : 'exclude' });
     if (attempt !== generation) { captured.getTracks().forEach(track => track.stop()); return; }
     stream = captured;
     if (!$('audio').checked) stream.getAudioTracks().forEach(track => { stream.removeTrack(track); track.stop(); });
-    if ($('audio').checked && !stream.getAudioTracks().some(track => track.readyState === 'live')) throw Error('System audio was not granted. Enable System Audio Recording for Projector Connect in macOS Settings, then retry.');
+    log(`[Capture] Audio tracks: ${stream.getAudioTracks().map(track => track.readyState).join(', ') || 'none'}`);
+    if ($('audio').checked && !stream.getAudioTracks().some(track => track.readyState === 'live')) throw Error('macOS returned no live system audio. Check recording permissions for Projector Connect, then quit and reopen the app from Finder. You can turn System audio off to share video only.');
     peer = new RTCPeerConnection({ iceServers: [], bundlePolicy: 'max-bundle' });
     for (const track of stream.getTracks()) { track.onended = () => { if (attempt === generation) stop(track.kind === 'audio' ? 'macOS stopped system audio capture. Check recording permissions.' : undefined); }; peer.addTransceiver(track, { direction: 'sendonly', streams: [stream] }); }
     const video = peer.getTransceivers().find(t => t.sender.track?.kind === 'video');
@@ -58,8 +61,8 @@ async function share(address, name) {
       if (attempt !== generation) return;
       const state = peer.connectionState; log(`WebRTC: ${state}`);
       if (state === 'connected') {
-        clearTimeout(timeout); clearTimeout(disconnectTimer); phase = 'connected'; status(`Sharing with ${activeName}`, `System audio: ${audio ? 'On' : 'Off'} · Local playback: On`); render();
-        if ($('keys').checked && !await sender.keys(true)) log('Some volume keys could not be registered. Another app may own them.');
+        clearTimeout(timeout); clearTimeout(disconnectTimer); phase = 'connected'; status(`Sharing with ${activeName}`, `System audio: ${audio ? 'On' : 'Off'} · Local playback: ${audio ? $('mirror').checked ? 'On' : 'Off' : 'Unchanged'}`); render();
+        if (audio && !$('mirror').checked && $('keys').checked && !await sender.keys(true)) log('Some volume keys could not be registered. Another app may own them.');
       } else if (state === 'failed') stop('Media connection failed. Check your network and receiver.');
       else if (state === 'disconnected') { clearTimeout(disconnectTimer); disconnectTimer = setTimeout(() => stop('The media connection was lost.'), 10000); }
     };
@@ -87,10 +90,23 @@ sender.onSignal(message => {
   }).catch(error => { if (attempt === generation) return stop(error.message); });
 });
 sender.onEnded(message => { if (phase === 'connecting' || phase === 'connected') stop(message); });
-sender.onDiagnostic(log);
-function updateDevices(value) { devices = value; if (!selected && devices.length === 1) selected = devices[0].id; render(); }
+sender.onDiagnostic(message => {
+  log(message);
+  if (!devices.length && message.startsWith('Bonjour')) {
+    discoveryFailed = true;
+    $('count').textContent = 'Discovery unavailable';
+    $('empty').firstElementChild.textContent = 'Automatic discovery is unavailable';
+    $('empty').lastElementChild.textContent = 'Check Local Network access for Projector Connect in macOS Settings, then Refresh. You can also connect by IP address.';
+  }
+});
+function updateDevices(value) { devices = value; if (devices.length) discoveryFailed = false; log(`[Discovery] ${devices.length} receiver(s) found`); if (!selected && devices.length === 1) selected = devices[0].id; render(); }
 sender.onDevices(updateDevices);
-$('refresh').onclick = () => sender.browse().then(updateDevices).catch(error => log(error.message));
+$('refresh').onclick = () => {
+  discoveryFailed = false;
+  $('empty').firstElementChild.textContent = 'Looking for nearby devices...';
+  $('empty').lastElementChild.textContent = 'Make sure the TV or projector is turned on and connected to the same network.';
+  sender.refresh().then(updateDevices).catch(error => log(error.message));
+};
 $('primary').onclick = () => {
   if (phase === 'connected') return stop();
   if (phase === 'error' && lastTarget) return share(lastTarget.address, lastTarget.name);
@@ -98,7 +114,9 @@ $('primary').onclick = () => {
   if (device) share(`${device.host.includes(':') ? `[${device.host}]` : device.host}:${device.port}`, device.name);
 };
 $('cancel').onclick = () => stop();
+$('audio').onchange = render;
+$('mirror').onchange = render;
 $('manual').onsubmit = event => { event.preventDefault(); share($('address').value.trim(), $('address').value.trim()); };
 $('copy').onclick = async () => { await sender.copy($('logs').textContent); $('copy').textContent = 'Logs copied'; };
 sender.browse().then(updateDevices).catch(error => log(error.message));
-setTimeout(() => { if (!devices.length) { $('empty').firstElementChild.textContent = 'No receivers found'; $('count').textContent = 'No devices found'; } }, 10000);
+setTimeout(() => { if (!devices.length && !discoveryFailed) { $('empty').firstElementChild.textContent = 'No receivers found'; $('count').textContent = 'No devices found'; } }, 10000);

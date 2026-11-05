@@ -13,12 +13,11 @@ test('app exchanges receiver signaling over TCP and releases session resources',
     isDestroyed() { return false; }
     loadFile() {}
   }
-  const browser = new EventEmitter(); browser.update = () => {}; browser.stop = () => {};
-  class Bonjour { find() { return browser; } destroy() {} }
+  class ReceiverDiscovery { devices = []; start() {} stop() {} refresh() {} }
   const app = new EventEmitter(); app.whenReady = () => Promise.resolve(); app.quit = () => {};
   const electron = { app, BrowserWindow: Window, ipcMain: { handle: (name, fn) => handlers.set(name, fn) }, session: { defaultSession: { setPermissionRequestHandler() {}, setPermissionCheckHandler() {}, setDisplayMediaRequestHandler() {} } }, clipboard: {}, globalShortcut: { unregisterAll() { registered = 0; }, register() { registered++; return true; } }, powerSaveBlocker: { start: () => 1, isStarted: () => true, stop: () => stopped++ } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/main.cjs'), 'utf8'), {
-    require: name => name === 'electron' ? electron : name === 'bonjour-service' ? { Bonjour } : name === './protocol.cjs' ? require('../src/protocol.cjs') : require(name),
+    require: name => name === 'electron' ? electron : name === './discovery.cjs' ? { ReceiverDiscovery } : name === './capture.cjs' ? require('../src/capture.cjs') : name === './protocol.cjs' ? require('../src/protocol.cjs') : require(name),
     __dirname: path.join(__dirname, '../src'), setTimeout, clearTimeout, console
   });
   await Promise.resolve();

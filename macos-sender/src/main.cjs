@@ -1,10 +1,10 @@
 const { app, BrowserWindow, ipcMain, session, clipboard, globalShortcut, powerSaveBlocker } = require('electron');
 const net = require('node:net');
 const path = require('node:path');
-const { Bonjour } = require('bonjour-service');
-const { target, lineReader, receiver, MAX_LINE } = require('./protocol.cjs');
-let window, socket, bonjour, browser, blocker, timer, authorizedCapture = false;
-const devices = new Map();
+const { ReceiverDiscovery } = require('./discovery.cjs');
+const { createDisplayCaptureHandler } = require('./capture.cjs');
+const { target, lineReader, connectionError, MAX_LINE } = require('./protocol.cjs');
+let window, socket, discovery, blocker, timer, authorizedCapture = false, playLocally = false;
 const emit = (channel, value) => { if (window && !window.isDestroyed()) window.webContents.send(channel, value); };
 function cleanup() {
   clearTimeout(timer); authorizedCapture = false;
@@ -27,14 +27,27 @@ app.whenReady().then(() => {
   window.webContents.on('will-navigate', event => event.preventDefault());
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback) => callback(contents === window.webContents && permission === 'display-capture' && authorizedCapture));
   session.defaultSession.setPermissionCheckHandler((contents, permission) => contents === window.webContents && permission === 'display-capture' && authorizedCapture);
-  // macOS native picker owns the display/audio selection and permission prompts.
-  session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => callback(null), { useSystemPicker: true });
-  handle('browse', () => { browser?.update(); return [...devices.values()]; });
-  handle('connect', async address => {
+  // The Electron wrapper's useSystemPicker:true path drops audio. Supply the same
+  // native-picker source explicitly, together with loopback when requested.
+  session.defaultSession.setDisplayMediaRequestHandler(createDisplayCaptureHandler({
+    authorized: () => authorizedCapture,
+    mainFrame: () => window.webContents.mainFrame,
+    playLocally: () => playLocally,
+    diagnostic: message => emit('diagnostic', message)
+  }), { useSystemPicker: false });
+  handle('browse', () => discovery.devices);
+  handle('refresh', () => { discovery.refresh(); return discovery.devices; });
+  handle('connect', async (address, options = {}) => {
     cleanup(); const destination = target(address);
+    playLocally = options?.playLocally === true;
     await new Promise((resolve, reject) => {
       const connection = net.createConnection(destination); socket = connection;
-      const fail = error => { reject(error); if (socket === connection) { cleanup(); emit('ended', error.message); } };
+      const fail = error => {
+        emit('diagnostic', `[Signaling] ${error.message}`);
+        const failure = connectionError(error);
+        reject(failure);
+        if (socket === connection) { cleanup(); emit('ended', failure.message); }
+      };
       connection.setNoDelay(true);
       timer = setTimeout(() => fail(Error('Connection timed out. Check the TV and local network.')), 10000);
       connection.on('error', fail);
@@ -55,13 +68,15 @@ app.whenReady().then(() => {
     return [['VolumeUp', 'up'], ['VolumeDown', 'down'], ['VolumeMute', 'muteToggle']].map(([key, action]) => globalShortcut.register(key, () => { try { send({ type: 'volume', action }); } catch {} })).every(Boolean);
   });
   handle('copy', text => { if (typeof text === 'string') clipboard.writeText(text.slice(-32000)); });
-  bonjour = new Bonjour({}, error => emit('diagnostic', `Discovery: ${error.message}`));
-  browser = bonjour.find({ type: 'screenreceiver', protocol: 'tcp' });
-  const upsert = service => { const device = receiver(service); if (device) { devices.set(device.id, device); emit('devices', [...devices.values()]); } };
-  browser.on('up', upsert);
-  browser.on('txt-update', upsert);
-  browser.on('down', service => { const device = receiver(service); if (device) { devices.delete(device.id); emit('devices', [...devices.values()]); } });
-  window.on('closed', () => { cleanup(); browser.stop(); bonjour.destroy(); app.quit(); });
+  discovery = new ReceiverDiscovery({
+    onDevices: devices => {
+      console.info(`[Discovery] ${devices.length} receiver(s): ${devices.map(device => device.name).join(', ')}`);
+      emit('devices', devices);
+    },
+    onDiagnostic: message => { console.warn(message); emit('diagnostic', message); }
+  });
+  discovery.start();
+  window.on('closed', () => { cleanup(); discovery.stop(); app.quit(); });
   window.webContents.on('render-process-gone', cleanup);
   window.webContents.on('unresponsive', cleanup);
   window.loadFile(path.join(__dirname, 'index.html'));

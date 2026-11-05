@@ -32,4 +32,10 @@ function receiver(service) {
   const host = service.addresses?.find(x => /^\d+\.\d+\.\d+\.\d+$/.test(x)) || service.host;
   return host ? { id, name, host, port: service.port, busy: field('busy') === '1' } : null;
 }
-module.exports = { target, lineReader, receiver, MAX_LINE };
+function connectionError(error) {
+  if (['EHOSTUNREACH', 'EACCES', 'EPERM'].includes(error.code)) {
+    return new Error('The Mac cannot reach the receiver. Enable Projector Connect in System Settings → Privacy & Security → Local Network, then quit and reopen the app from Finder. If access is already enabled, check Wi-Fi and VPN routing.', { cause: error });
+  }
+  return error;
+}
+module.exports = { target, lineReader, receiver, connectionError, MAX_LINE };
